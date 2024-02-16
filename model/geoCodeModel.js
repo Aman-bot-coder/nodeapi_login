@@ -67,10 +67,23 @@ class GeoCodeModel {
         });
       });
     }
-    static getCount(){
+    static getCount(year,month,date){
       return new Promise((resolve,reject)=>{
-        const query1 = 'SELECT COUNT FROM '
-      })
+        const query1 = 'SELECT COUNT(*) FROM geocodelogs';
+        const ytdQuery = 'SELECT COUNT(*) FROM geocodelogs WHERE YEAR(timestamp) = ?';
+        const mtdQuery = 'SELECT COUNT(*) FROM geocodelogs WHERE YEAR(timestamp)=? AND MONTH(timestamp)=?';
+        const ftdQuery = 'SELECT COUNT(*) FROM geocodelogs WHERE YEAR(timestamp) =? AND MONTH (timestamp)=? AND DAY(timestamp)=?';
+        const groupByQuery = 'SELECT success, COUNT(*) AS count FROM geocodelogs GROUP BY success';
+
+        db.query(query1,(error,results)=>{
+          if(error){
+            reject(error);
+            console.log(error);
+          }else{
+            resolve(results);
+          }
+        });
+      });
     }
   }
   

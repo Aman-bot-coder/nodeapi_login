@@ -178,6 +178,21 @@ app.post('/logs/mtd', geocodeController.getByMonth);
  *         description: Internal server error
  */
 app.post('/logs/ytd',geocodeController.getByYear);
+/**
+ * @swagger
+ * /logs/count:
+ *   post:
+ *     summary: Get the count of data
+ *     description: Fetch the count of data from the logs table
+ *     responses:
+ *       200:
+ *         description: Logs retrieved successfully
+ *       400:
+ *         description: Bad request, missing or invalid parameters
+ *       500:
+ *         description: Internal server error
+ */
+app.post('/logs/count',geocodeController.getCount);
 
 
 app.listen(port, () => {
