@@ -1,9 +1,11 @@
 class ResponseView {
-    static success(res, status, message,data) {
+    static success(res, status, message,data,token) {
       res.status(status).json(({
         success:"true",
         message:message,
-        data:data
+        data:data,
+        token:token
+        
       }))
     }
   

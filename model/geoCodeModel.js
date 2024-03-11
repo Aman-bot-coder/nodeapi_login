@@ -67,25 +67,56 @@ class GeoCodeModel {
         });
       });
     }
-    static getCount(year,month,date){
-      return new Promise((resolve,reject)=>{
-        const query1 = 'SELECT COUNT(*) FROM geocodelogs';
-        const ytdQuery = 'SELECT COUNT(*) FROM geocodelogs WHERE YEAR(timestamp) = ?';
-        const mtdQuery = 'SELECT COUNT(*) FROM geocodelogs WHERE YEAR(timestamp)=? AND MONTH(timestamp)=?';
-        const ftdQuery = 'SELECT COUNT(*) FROM geocodelogs WHERE YEAR(timestamp) =? AND MONTH (timestamp)=? AND DAY(timestamp)=?';
-        const groupByQuery = 'SELECT success, COUNT(*) AS count FROM geocodelogs GROUP BY success';
+    static getCount(year, month, date) {
+          const query1 = 'SELECT COUNT(*) FROM geocodelogs';
+          const ytdQuery = 'SELECT COUNT(*) FROM geocodelogs WHERE YEAR(timestamp) = ?';
+          const mtdQuery = 'SELECT COUNT(*) FROM geocodelogs WHERE YEAR(timestamp)=? AND MONTH(timestamp)=?';
+          const ftdQuery = 'SELECT COUNT(*) FROM geocodelogs WHERE YEAR(timestamp) =? AND MONTH (timestamp)=? AND DAY(timestamp)=?';
+          const groupByQuery = 'SELECT success, COUNT(*) AS count FROM geocodelogs GROUP BY success';
+          const response = {};
+          db.query(query1,(error1,result1)=>{
+            if(error1){
+              console.log(error1);
+              callback(error1,null)
+              response['query1_error'] = "Some Error Occured While Fetching the Count Data";
+            }else{
+              response['GetAllCount'] = result1;
+            }
+          })
+            
+            db.query(ytdQuery,[year],(err2,result2)=>{
+            if(err2){
+              console.log(err2);
+              callback(err2,null)
+              response['ytd_count'] ='Some Error Occured';
 
-        db.query(query1,(error,results)=>{
-          if(error){
-            reject(error);
-            console.log(error);
-          }else{
-            resolve(results);
-          }
-        });
-      });
-    }
-  }
-  
-  
+            }else{
+              response['ytd_count'] = result2;
+            }
+          });
+            
+          db.query(mtdQuery,[year],[month],(err3,result3)=>{
+            if(err3){
+              console.log(err3);
+              callback(err3,null)
+              response['mtd_count'] = 'Some Error Occured';
+            }else{
+              response['mtd_count'] = result3;
+            }
+          });
+
+            
+
+          db.query(ftdQuery,[year],[month],[date],(err4,result4)=>{
+            if(err4){
+              console.log(err4);
+              callback(err4,null)
+              response['ftd_count']='Some Error Occured'
+            }else{
+              response['ftd_count'] = result4;
+              callback(null,response);
+            }
+          });
+        }
+      }
   module.exports = GeoCodeModel;

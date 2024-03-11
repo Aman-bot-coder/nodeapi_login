@@ -5,6 +5,9 @@ const geoCodeModel = new GeoCodeModel();
 class geocodeController {
   static async getByDate(req, res) {
 
+    console.log('req ');
+    console.log(req.body);
+
     const { year, month, date } = req.body;
     try {
       const result = await GeoCodeModel.getByDate(year, month, date);
@@ -30,6 +33,8 @@ class geocodeController {
 
   static async getByYear(req, res) {
     const { year } = req.body;
+    console.log('req of year ');
+    console.log(req.body);
     try {
       const result = await GeoCodeModel.getByYear(year);
       if (result === null) {
@@ -53,6 +58,8 @@ class geocodeController {
 
   static async getByMonth(req, res) {
     const { year, month } = req.body;
+    console.log('req of month ');
+    console.log(req.body);
     try {
       const result = await GeoCodeModel.getByMonth(year, month);
       if (result) {
@@ -66,18 +73,27 @@ class geocodeController {
     }
   }
   static async getCount(req,res){
-    try{
-      const result = await GeoCodeModel.getCount();
-      if(result){
-        ResponseView.success(res,200,'Get Count',result);
-      }else{
-        ResponseView.error(res,500,'Internal Server Error',res);
+    const {year,month,date} = req.body;
+    if(req.body.year==null||req.body.month==null||req.body.date==null){
+      return ResponseView.error(res,400,'Kindly add all the parameters');
+    }else{
+
+      try{
+        GeoCodeModel.getCount(year, month, date,(err,result)=>{
+          if(err){
+            console.log(err);
+            ResponseView.error(res,500,'Internal Server Error',res);
+          }else{
+            ResponseView.success(res,200,'Get Count',result);
+          }
+        });
+
+      }catch(err){
+        console.log(err);
       }
-    }catch(error){
-      ResponseView.error(res,500,'Internal Server Error',res);
-    }
     
   }
+}
 }
 
 module.exports = geocodeController;

@@ -2,14 +2,19 @@ const bcrypt = require('bcrypt');
 const AdminModel = require('../model/adminModel');
 const ResponseView = require('../views/responseView');
 const adminModel = new AdminModel();
+const jwt = require('jsonwebtoken');
+const optService = require('../services/optService');
+const { json } = require('express');
+const moment = require('moment-timezone');
+const secretKey = 'Persh@1234'
 
 class AdminController {
   static async signup(req, res) {
-    const { firstName, lastName, email, adminPassword, mobileNumber } = req.body;
+    const { firstName, lastName, email, mobileNumber } = req.body;
 
     try {
       // validate mobile number ...
-      const mobileNumberPattern = /^\d{10}$/;
+      const mobileNumberPattern = /^(?!0|1|2|3|4|5)\d{10}$/;
       if (!mobileNumber.match(mobileNumberPattern)) {
         return ResponseView.error(res, 400, 'Invalid mobile number format');
       }
@@ -20,18 +25,18 @@ class AdminController {
         return ResponseView.error(res, 400, 'Invalid email format');
       }
 
-
-
-      const existingAdmin = await adminModel.getAdminByMobileNumber(mobileNumber);
-      const existingByemail = await adminModel.getAdminByEmail(email);
-      if (existingAdmin.length > 0) {
-        ResponseView.error(res, 400, 'Mobile number already exists');
-      }else if(existingByemail.length> 0){
-        ResponseView.error(res,400,"Email Already Exist");
-      } 
+      const existingAdminPromise = adminModel.getAdminByMobileNumber(mobileNumber);
+      const existingByEmailPromise = adminModel.getAdminByEmail(email);
+  
+      const [existingAdmin, existingByEmail] = await Promise.all([existingAdminPromise, existingByEmailPromise]);
+  
+      if (existingAdmin !== null) {
+          ResponseView.error(res, 400, 'Mobile number already exists');
+      } else if (existingByEmail.length > 0) {
+          ResponseView.error(res, 400, "Email Already Exist");
+      }
       else {
-        const hashedPassword = await bcrypt.hash(adminPassword, 10);
-        const { insertId } = await adminModel.registerAdmin(firstName, lastName, email, hashedPassword, mobileNumber);
+        const { insertId } = await adminModel.registerAdmin(firstName, lastName, email, mobileNumber);
         // sendVerifyEmail(firstName,lastName,email,insertId);
         const registerAdmin = await adminModel.getAdminById(insertId);
         console.log(registerAdmin);
@@ -45,44 +50,63 @@ class AdminController {
   }
 
   static async login(req, res) {
-    const { mobileNumber, adminPassword } = req.body;
+    const { mobileNumber} = req.body;
 
     try {
       const admin = await adminModel.getAdminByMobileNumber(mobileNumber);
       console.log(admin);
-        const adminPasswordd = await adminModel.getAdminPassword(mobileNumber);
-        if(adminPasswordd===null){
-          ResponseView.error(res, 401, 'Mobile Number Does Not Exist');
-        }else{
-        const match = await bcrypt.compare(adminPassword,adminPasswordd);
-        console.log(match)
-        if (match) {
-          req.isAdminAuthenticated = true; 
-          next();
-          ResponseView.success(res, 200, 'Login successful');
-        } else {
-          ResponseView.error(res, 401, 'Invalid Password Kindly Check Your Password Again');
+      if(!admin){
+        return ResponseView.error(res,400,'Mobile Number Does not exist');
+      }else{
+        const otp = optService.generateOTP();
+        console.log(otp);
+        try{
+          const send = optService.sendOtp(mobileNumber,otp);
+          console.log(send)
+        }catch(error){
+          console.log(`Error Sending the message`)
         }
-      }
-     } catch (error) {
+        const send = optService.sendOtp(mobileNumber,otp);
+        if(send){
+          
+          const savedService = await adminModel.savedOtp(mobileNumber,otp);
+          console.log(savedService)
+          if(savedService){
+            ResponseView.success(res,200,'Otp Send Sucessfully, Please Verify the otp',otp);
+          }else{
+            ResponseView.error(res,400,'Some Error Occured');
+          }
+        }else{
+          ResponseView.error(res,400,'Error Sending the OTP');
+        }
+        }   
+        }catch (error) {
       ResponseView.error(res, 500, error.message);
     }
   }
-  static async authenticate(req, res, next) {
-    try {
-      // Check if user is authenticated
-      if (!req.isAdminAuthenticated) {
-        return ResponseView.error(res, 401, 'Unauthorized. Please login first.');
-        // You can also redirect to the login page
-        // return res.redirect('/login');
+  static async verifyOTPService(req,res){
+    const{mobileNumber,otp} = req.body;
+    if(req.body.mobileNumber==null||req.body.otp==null){
+      ResponseView.error(res,400,'Kindly add mobile Number and OTP');
+    }
+    const verifyNumber = await adminModel.getAdminByMobileNumber(mobileNumber)
+    if(!verifyNumber){
+      ResponseView.error(res,400,'Mobile Number is not valid')
     }else{
-      next();
+      const verifyuser = await adminModel.verifyOtp(mobileNumber,otp);
+      const orignalOtp = verifyuser[0].otp
+      if(otp===orignalOtp){
+        const token =  jwt.sign({verifyNumber},secretKey);
+        console.log(token);
+        ResponseView.success(res,200,'Otp has been verified',verifyNumber,token);
+        
+      }else{
+        ResponseView.error(res,400,'Invalid Otp');
+      }
     }
-     
-    } catch (error) {
-      ResponseView.error(res, 500, error.message);
-    }
+    
   }
+  
 }
   
 

@@ -6,6 +6,7 @@ const AdminController = require('./controllers/adminController');
 const geocodeController = require('./controllers/geocodeController')
 const swaggeJsDoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
+const authController = require('./controllers/authController')
 
 
 
@@ -93,6 +94,7 @@ app.post('/signup', AdminController.signup);
  *         description: Internal server error
  */
 app.post('/login', AdminController.login);
+app.post('/verifyOtp',AdminController.verifyOTPService);
 /**
  * @swagger
  * /logs/ftd:
